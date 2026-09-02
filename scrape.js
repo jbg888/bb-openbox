@@ -47,8 +47,6 @@ async function withPage(fn) {
     headless: flag('--headed') ? false : (onCI || cfg.browser.headless !== false),
     proxy,
     viewport: { width: 1366, height: 900 },
-    // Bundled headless Chromium announces itself as "HeadlessChrome"; present a normal Chrome UA instead.
-    userAgent: onCI ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36' : undefined,
     locale: 'en-US',
     timezoneId: 'America/Los_Angeles',
     args: ['--disable-blink-features=AutomationControlled'],
