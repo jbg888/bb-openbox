@@ -1,0 +1,34 @@
+# Runs the scraper on GitHub's servers — no computer needed.
+# Schedule is UTC: 07:00 UTC = midnight Pacific (PDT).
+name: scrape
+on:
+  schedule:
+    - cron: "0 7,13,19,1 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: scrape
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci || npm install
+      - run: npx playwright install --with-deps chromium
+      - name: scrape
+        env:
+          CI: "true"
+          PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+        run: node scrape.js --no-push
+      - name: commit results
+        run: |
+          git config user.name "scraper"
+          git config user.email "scraper@users.noreply.github.com"
+          git add docs data
+          git diff --cached --quiet || git commit -m "deals $(date -u +%FT%TZ)"
+          git push
