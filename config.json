@@ -1,11 +1,89 @@
 {
   "zip": "90069",
   "myStore": "393",
-  "stores": ["393", "183", "137", "179", "109", "1510", "764", "9149", "1537", "104", "1511"],
+  "areas": [
+    {
+      "name": "West Hollywood",
+      "myStore": "393",
+      "zip": "90069",
+      "stores": [
+        "393",
+        "183",
+        "137",
+        "179",
+        "109",
+        "1510",
+        "764",
+        "9149",
+        "1537",
+        "104",
+        "1511"
+      ]
+    },
+    {
+      "name": "Glendora",
+      "myStore": "1018",
+      "zip": "91740",
+      "stores": [
+        "1018",
+        "102",
+        "103",
+        "131",
+        "2650",
+        "846",
+        "9046",
+        "125",
+        "114",
+        "1537",
+        "126"
+      ]
+    }
+  ],
+  "stores": [
+    "393",
+    "183",
+    "137",
+    "179",
+    "109",
+    "1510",
+    "764",
+    "9149",
+    "1537",
+    "104",
+    "1511",
+    "1018",
+    "102",
+    "103",
+    "131",
+    "2650",
+    "846",
+    "9046",
+    "125",
+    "114",
+    "126"
+  ],
   "storeNames": {
-    "393": "West Hollywood", "183": "Atwater Village", "137": "Burbank", "179": "Culver City",
-    "109": "West LA", "1510": "Culver City Westfield", "764": "Sherman Oaks", "9149": "Compton Warehouse",
-    "1537": "Montebello", "104": "Hawthorne", "1511": "Pacoima"
+    "393": "West Hollywood",
+    "183": "Atwater Village",
+    "137": "Burbank",
+    "179": "Culver City",
+    "109": "West LA",
+    "1510": "Culver City Westfield",
+    "764": "Sherman Oaks",
+    "9149": "Compton Warehouse",
+    "1537": "Montebello",
+    "104": "Hawthorne",
+    "1511": "Pacoima",
+    "1018": "Glendora",
+    "102": "West Covina",
+    "103": "City of Industry",
+    "131": "Montclair",
+    "2650": "Montclair Outlet",
+    "846": "Chino",
+    "9046": "Ontario Warehouse",
+    "125": "Pasadena",
+    "114": "Fullerton",
+    "126": "Yorba Linda"
   },
   "minPrice": 250,
   "concurrency": 6,
@@ -22,7 +100,7 @@
   },
   "outputCopyDir": "C:\\Users\\jonat\\My Drive\\7. Claude Projects\\1. BB Open Box",
   "site": {
-    "title": "Best Buy Open-Box Deals near West Hollywood",
+    "title": "Best Buy Open-Box Deals near West Hollywood & Glendora",
     "defaultMinPct": 50,
     "defaultBaseline": "new"
   },
