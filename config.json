@@ -1,0 +1,39 @@
+{
+  "zip": "90069",
+  "myStore": "393",
+  "stores": ["393", "183", "137", "179", "109", "1510", "764", "9149", "1537", "104", "1511"],
+  "storeNames": {
+    "393": "West Hollywood", "183": "Atwater Village", "137": "Burbank", "179": "Culver City",
+    "109": "West LA", "1510": "Culver City Westfield", "764": "Sherman Oaks", "9149": "Compton Warehouse",
+    "1537": "Montebello", "104": "Hawthorne", "1511": "Pacoima"
+  },
+  "minPrice": 250,
+  "concurrency": 6,
+  "delayMs": 50,
+  "categories": {
+    "Cameras & Drones": "Cameras, Camcorders & Drones~abcat0400000",
+    "Computers & Tablets": "Computers & Tablets~abcat0500000",
+    "Headphones": "Headphones~abcat0204000",
+    "Health & Wellness": "Health, Wellness & Personal Care~pcmcat242800050021",
+    "Home Audio": "Home Audio & Speakers~abcat0200000",
+    "Home & Office": "Home, Furniture & Office~pcmcat312300050015",
+    "Smart Home": "Smart Home~pcmcat254000050002",
+    "TV & Home Theater": "TV & Home Theater~abcat0100000"
+  },
+  "outputCopyDir": "C:\\Users\\jonat\\My Drive\\7. Claude Projects\\1. BB Open Box",
+  "site": {
+    "title": "Best Buy Open-Box Deals near West Hollywood",
+    "defaultMinPct": 50,
+    "defaultBaseline": "new"
+  },
+  "git": {
+    "push": true,
+    "branch": "main",
+    "remote": "origin"
+  },
+  "browser": {
+    "channel": "chrome",
+    "headless": true,
+    "profileDir": ".chrome-profile"
+  }
+}

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open-Box Deals</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #14171c; --muted: #66707d; --line: #e3e6ea;
+    --accent: #0a4abf; --good: #167a3d; --good-bg: #e6f4ea; --hot: #b42318; --hot-bg: #fdecea; --new-bg: #fff4d6; --new: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1216; --card: #171b21; --ink: #e8ebef; --muted: #98a2ae; --line: #2a3038; --accent: #6ea8ff;
+            --good: #58c27d; --good-bg: #163523; --hot: #ff7b72; --hot-bg: #3a1b18; --new-bg: #3a2f12; --new: #f2c25c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 20px 24px 8px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .stats { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+  .stat b { font-size: 18px; display: block; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; padding: 12px 24px; background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; }
+  .f label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
+  .f select, .f input[type=text], .f input[type=number] { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; }
+  .f select[multiple] { height: 96px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { flex: 1; border: 0; background: var(--bg); color: var(--ink); padding: 6px; cursor: pointer; font: inherit; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .range { display: flex; align-items: center; gap: 8px; }
+  .range input[type=range] { flex: 1; }
+  .range output { min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+  .chk { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
+  .chk label { text-transform: none; font-size: 13px; color: var(--ink); display: flex; gap: 4px; align-items: center; margin: 0; }
+  .wrap { padding: 12px 24px 40px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); cursor: pointer; user-select: none; white-space: nowrap; background: var(--card); }
+  th.sorted::after { content: " ▾"; } th.sorted.asc::after { content: " ▴"; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.name a { color: var(--ink); text-decoration: none; font-weight: 600; }
+  td.name a:hover { text-decoration: underline; }
+  .cat { color: var(--muted); font-size: 12px; }
+  .pct { font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--good-bg); color: var(--good); }
+  .pct.hot { background: var(--hot-bg); color: var(--hot); }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .tag.new { background: var(--new-bg); color: var(--new); }
+  .tag.drop { background: var(--good-bg); color: var(--good); }
+  .stores { font-size: 12px; color: var(--muted); }
+  .stores b { color: var(--ink); font-weight: 500; }
+  .tiers { font-size: 12px; color: var(--muted); }
+  .link a { color: var(--accent); white-space: nowrap; }
+  .strike { color: var(--muted); text-decoration: line-through; font-size: 12px; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  footer { padding: 0 24px 30px; color: var(--muted); font-size: 12px; }
+  @media (max-width: 720px) { header, .filters, .wrap, footer { padding-left: 12px; padding-right: 12px; } th.opt, td.opt { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Open-Box Deals</h1>
+  <div class="sub" id="sub"></div>
+  <div class="stats" id="stats"></div>
+</header>
+
+<div class="filters">
+  <div class="f"><label>Search</label><input type="text" id="q" placeholder="name or SKU"></div>
+  <div class="f"><label>Savings measured against</label>
+    <div class="seg"><button data-base="new" id="bNew">Current New price</button><button data-base="reg" id="bReg">Comp. Value</button></div>
+  </div>
+  <div class="f"><label>Minimum % off · <span id="pctLbl"></span></label>
+    <div class="range"><input type="range" id="minPct" min="0" max="80" step="5"><output id="pctOut"></output></div>
+  </div>
+  <div class="f"><label>Minimum $ off</label><input type="number" id="minSave" min="0" step="25" placeholder="0"></div>
+  <div class="f"><label>Category</label><select id="cat" multiple></select></div>
+  <div class="f"><label>Pickup store</label><select id="store" multiple></select></div>
+  <div class="f"><label>Condition</label><div class="chk" id="cond"></div></div>
+  <div class="f"><label>Show</label><div class="chk"><label><input type="checkbox" id="onlyNew"> New since last run only</label></div></div>
+</div>
+
+<div class="wrap">
+  <table id="tbl">
+    <thead><tr>
+      <th data-k="name">Item</th>
+      <th data-k="category" class="opt">Category</th>
+      <th data-k="base" class="num">Normal price</th>
+      <th data-k="price" class="num">Open-box price</th>
+      <th data-k="pct" class="num">% off</th>
+      <th data-k="save" class="num">$ off</th>
+      <th data-k="condition">Condition</th>
+      <th data-k="stores">Pickup at</th>
+      <th class="opt">Link</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" hidden>No items match these filters. Lower the minimum % off.</div>
+</div>
+<footer id="foot"></footer>
+
+<script>
+const DATA = /*__DATA__*/null;
+(function () {
+  if (!DATA) { document.getElementById('empty').hidden = false; document.getElementById('empty').textContent = 'No data yet — run node scrape.js'; return; }
+  const items = DATA.items, meta = DATA.meta;
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => n == null ? '—' : '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const state = { base: (meta.site && meta.site.defaultBaseline) || 'new', minPct: (meta.site && meta.site.defaultMinPct) ?? 50, minSave: 0, q: '', cats: new Set(), stores: new Set(), conds: new Set(), onlyNew: false, sortK: 'save', sortAsc: false };
+
+  // header
+  $('title').textContent = (meta.site && meta.site.title) || 'Open-Box Deals';
+  const when = new Date(meta.ts);
+  $('sub').textContent = `Updated ${when.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} · ${meta.skusScanned} open-box SKUs scanned · ${items.length} in stock at your ${Object.keys(meta.storeNames || {}).length} stores · open-box price ≥ $${meta.minPrice}`;
+  const newCount = items.filter((i) => i.isNew).length;
+  const drops = items.filter((i) => i.priceDrop).length;
+  $('stats').innerHTML = [
+    [items.length, 'in stock nearby'],
+    [items.filter((i) => (i.pctVsNew || 0) >= 50).length, '≥50% off new'],
+    [items.filter((i) => (i.pctVsNew || 0) >= 30).length, '≥30% off new'],
+    [newCount, 'new since last run'],
+    [drops, 'price drops'],
+  ].map(([n, l]) => `<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
+
+  // filter widgets
+  const cats = [...new Set(items.map((i) => i.category))].sort();
+  $('cat').innerHTML = cats.map((c) => `<option value="${c}">${c} (${items.filter((i) => i.category === c).length})</option>`).join('');
+  const storeIds = (meta.stores && meta.stores.length ? meta.stores : Object.keys(meta.storeNames || {})).map(String);
+  const storeCount = (id) => items.filter((i) => i.stores.some((s) => s.id === id)).length;
+  $('store').innerHTML = storeIds.map((id) => `<option value="${id}">${meta.storeNames[id]} (${storeCount(id)})</option>`).join('');
+  const conds = ['Fair', 'Good', 'Excellent', 'Certified Excellent'].filter((c) => items.some((i) => i.condition === c));
+  $('cond').innerHTML = conds.map((c) => `<label><input type="checkbox" value="${c}" checked> ${c}</label>`).join('');
+  $('minPct').value = state.minPct; $('pctOut').value = state.minPct + '%';
+
+  const derive = (i) => {
+    const base = state.base === 'new' ? i.newPrice : i.regularPrice;
+    const pct = state.base === 'new' ? i.pctVsNew : i.pctVsReg;
+    const save = state.base === 'new' ? i.saveVsNew : i.saveVsReg;
+    return { base, pct: pct ?? 0, save: save ?? 0 };
+  };
+
+  function render() {
+    $('bNew').classList.toggle('on', state.base === 'new');
+    $('bReg').classList.toggle('on', state.base === 'reg');
+    $('pctLbl').textContent = state.base === 'new' ? 'vs current New price' : 'vs Comp. Value';
+    const q = state.q.trim().toLowerCase();
+    let rows = items.map((i) => ({ i, ...derive(i) })).filter(({ i, pct, save }) =>
+      pct >= state.minPct && save >= state.minSave &&
+      (!state.cats.size || state.cats.has(i.category)) &&
+      (!state.stores.size || i.stores.some((s) => state.stores.has(s.id))) &&
+      (!state.conds.size || state.conds.has(i.condition)) &&
+      (!state.onlyNew || i.isNew) &&
+      (!q || (i.name || '').toLowerCase().includes(q) || i.sku.includes(q)));
+    const k = state.sortK, dir = state.sortAsc ? 1 : -1;
+    rows.sort((a, b) => {
+      const va = k in a ? a[k] : a.i[k], vb = k in b ? b[k] : b.i[k];
+      if (k === 'stores') return dir * ((a.i.stores[0] || {}).distance - (b.i.stores[0] || {}).distance);
+      if (typeof va === 'string') return dir * va.localeCompare(vb);
+      return dir * ((va ?? -Infinity) - (vb ?? -Infinity));
+    });
+    document.querySelectorAll('th[data-k]').forEach((th) => { th.classList.toggle('sorted', th.dataset.k === k); th.classList.toggle('asc', th.dataset.k === k && state.sortAsc); });
+    $('rows').innerHTML = rows.map(({ i, base, pct, save }) => {
+      const stores = i.stores.map((s) => `<b>${s.name}</b>${s.qty > 1 ? ' ×' + s.qty : ''}`).join(', ');
+      const other = i.conditions.length > 1 ? `<div class="tiers">also: ${i.conditions.slice(1).map((c) => `${c.condition} ${money(c.price)}`).join(' · ')}</div>` : '';
+      const otherBase = state.base === 'new' ? (i.regularPrice && i.regularPrice !== i.newPrice ? `<div class="strike">comp ${money(i.regularPrice)}</div>` : '') : (i.newPrice && i.newPrice !== i.regularPrice ? `<div class="tiers">new ${money(i.newPrice)}</div>` : '');
+      return `<tr>
+        <td class="name"><a href="${i.url || i.newUrl || '#'}" target="_blank" rel="noopener">${i.name || i.sku}</a>${i.isNew ? '<span class="tag new">NEW</span>' : ''}${i.priceDrop ? `<span class="tag drop">↓ ${money(i.priceDrop)}</span>` : ''}<div class="cat">SKU ${i.sku}</div></td>
+        <td class="opt cat">${i.category}</td>
+        <td class="num">${money(base)}${otherBase}</td>
+        <td class="num"><b>${money(i.price)}</b>${other}</td>
+        <td class="num"><span class="pct${pct >= 50 ? ' hot' : ''}">${pct.toFixed(0)}%</span></td>
+        <td class="num">${money(save)}</td>
+        <td>${i.condition}</td>
+        <td class="stores">${stores}</td>
+        <td class="opt link"><a href="${i.url || i.newUrl || '#'}" target="_blank" rel="noopener">Best Buy ↗</a></td>
+      </tr>`;
+    }).join('');
+    $('empty').hidden = rows.length > 0;
+    $('foot').textContent = `${rows.length} of ${items.length} items shown · scrape took ${Math.round((meta.durationMs || 0) / 1000)}s · ${(meta.errors || []).length} errors · Prices and stock change quickly; verify on bestbuy.com before driving.`;
+  }
+
+  // wiring
+  $('q').addEventListener('input', (e) => { state.q = e.target.value; render(); });
+  $('bNew').onclick = () => { state.base = 'new'; render(); };
+  $('bReg').onclick = () => { state.base = 'reg'; render(); };
+  $('minPct').addEventListener('input', (e) => { state.minPct = +e.target.value; $('pctOut').value = state.minPct + '%'; render(); });
+  $('minSave').addEventListener('input', (e) => { state.minSave = +e.target.value || 0; render(); });
+  $('cat').addEventListener('change', (e) => { state.cats = new Set([...e.target.selectedOptions].map((o) => o.value)); render(); });
+  $('store').addEventListener('change', (e) => { state.stores = new Set([...e.target.selectedOptions].map((o) => o.value)); render(); });
+  $('cond').addEventListener('change', () => { state.conds = new Set([...document.querySelectorAll('#cond input:checked')].map((c) => c.value)); render(); });
+  $('onlyNew').addEventListener('change', (e) => { state.onlyNew = e.target.checked; render(); });
+  document.querySelectorAll('th[data-k]').forEach((th) => th.onclick = () => { if (state.sortK === th.dataset.k) state.sortAsc = !state.sortAsc; else { state.sortK = th.dataset.k; state.sortAsc = th.dataset.k === 'name' || th.dataset.k === 'category'; } render(); });
+  render();
+})();
+</script>
+</body>
+</html>
