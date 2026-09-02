@@ -41,7 +41,7 @@
   // ---------- 1. Listing pages -> SKUs per category ----------
   function listingUrl(cfg, categoryFacet, page) {
     const parts = [
-      ...cfg.stores.map((s) => `storepickupstores_facet=Store Availability - In Store Pickup~${s}`),
+      ...allStores(cfg).map((s) => `storepickupstores_facet=Store Availability - In Store Pickup~${s}`),
       `category_facet=${categoryFacet}`,
       `currentprice_facet=Price~${cfg.minPrice} to Up`,
       'soldout_facet=Availability~Exclude Out of Stock Items',
@@ -139,12 +139,20 @@
   }
 
   // ---------- 3. Store availability via fulfillment endpoint ----------
-  async function fetchAvailability(cfg, sku) {
+  // cfg.areas = [{ name, myStore, zip, stores:[ids] }]. Best Buy returns the ~27 stores nearest to `myStore`,
+  // so each area needs its own call; results are merged per condition, de-duplicated by store id.
+  function areasOf(cfg) {
+    if (cfg.areas && cfg.areas.length) return cfg.areas;
+    return [{ name: cfg.storeNames && cfg.storeNames[cfg.myStore] || cfg.myStore, myStore: cfg.myStore, zip: cfg.zip, stores: cfg.stores }];
+  }
+  function allStores(cfg) { return [...new Set(areasOf(cfg).flatMap((a) => a.stores.map(String)))]; }
+
+  async function fetchAvailabilityArea(area, sku) {
     const v = {
       fulfillmentOptionsInput: {
         sku, condition: 'ANY',
-        shipping: { destinationZipCode: cfg.zip },
-        inStorePickup: { storeId: cfg.myStore, searchNearby: true, showNearbyLocations: true },
+        shipping: { destinationZipCode: area.zip },
+        inStorePickup: { storeId: String(area.myStore), searchNearby: true, showNearbyLocations: true },
       },
     };
     const r = await fetch('/gateway/graphql/fulfillment?variables=' + encodeURIComponent(JSON.stringify(v)), { credentials: 'include' });
@@ -152,12 +160,12 @@
     const j = await r.json();
     const d = j.data && j.data.fulfillmentOptions && j.data.fulfillmentOptions.ispuDetails && j.data.fulfillmentOptions.ispuDetails[0];
     if (!d) return {};
-    const wanted = new Set(cfg.stores.map(String));
+    const wanted = new Set(area.stores.map(String));
     const locs = [
       { store: d.store, availability: d.ispuAvailability || [], distance: 0 },
       ...(d.nearbyLocations || []),
     ];
-    // { condIndex: [{id, name, qty, distance}] } — only units physically in hand
+    // { condIndex: [{id, name, qty, distance, area}] } — only units physically in hand
     const byCond = {};
     for (const l of locs) {
       const st = l.store || {};
@@ -167,10 +175,22 @@
         if (c === undefined) continue;
         const qty = a.quantity != null ? Number(a.quantity) : 0;
         if (!qty) continue;
-        (byCond[c] = byCond[c] || []).push({ id: String(st.storeId), name: st.name, qty, distance: l.distance });
+        (byCond[c] = byCond[c] || []).push({ id: String(st.storeId), name: st.name, qty, distance: l.distance, area: area.name });
       }
     }
     return byCond;
+  }
+
+  async function fetchAvailability(cfg, sku) {
+    const merged = {};
+    for (const area of areasOf(cfg)) {
+      const byCond = await fetchAvailabilityArea(area, sku);
+      for (const [c, stores] of Object.entries(byCond)) {
+        const list = (merged[c] = merged[c] || []);
+        for (const s of stores) if (!list.some((x) => x.id === s.id)) list.push(s);
+      }
+    }
+    return merged;
   }
 
   // ---------- 4. Assemble ----------
@@ -255,5 +275,5 @@
 
   window.bbScrape = bbScrape;
   window.bbProbe = bbProbe;
-  window.bbInternals = { collectSkus, fetchPrices, fetchAvailability, assemble, listingUrl };
+  window.bbInternals = { collectSkus, fetchPrices, fetchAvailability, assemble, listingUrl, areasOf, allStores };
 })();
