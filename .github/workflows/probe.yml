@@ -1,0 +1,32 @@
+# Hourly listing-only probe — records when new open-box SKUs appear so we can pick the scrape schedule.
+# Delete this file once analyze-probe.js has answered the question.
+name: probe
+on:
+  schedule:
+    - cron: "30 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: scrape
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci || npm install
+      - run: npx playwright install --with-deps chromium
+      - env:
+          CI: "true"
+          PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
+          PROXY_USER: ${{ secrets.PROXY_USER }}
+          PROXY_PASS: ${{ secrets.PROXY_PASS }}
+        run: node scrape.js --probe
+      - run: |
+          git config user.name "scraper"
+          git config user.email "scraper@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "probe $(date -u +%FT%TZ)"
+          git push
