@@ -89,14 +89,17 @@
         parts.push(`s${s}_c${c}: productBySkuId(skuId:"${s}", openBoxCondition:${c}) { price(${PRICE_INPUT}) { openBoxPrice openBoxCondition } }`);
       }
     }
-    return `query q { ${parts.join(' ')} }`;
+    return `query getProduct { ${parts.join(' ')} }`;
   }
+
+  // Same identifying headers the real site sends with its price queries.
+  const GQL_HEADERS = { 'accept': '*/*', 'content-type': 'application/json', 'x-client-id': 'plp-web', 'x-requested-for-operation-name': 'getProduct' };
 
   async function graphql(query) {
     // POST first; some networks get a bot-challenge on POST, so fall back to GET.
     const attempts = [
-      () => fetch('/gateway/graphql', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'accept': 'application/json' }, body: JSON.stringify({ query }) }),
-      () => fetch('/gateway/graphql?query=' + encodeURIComponent(query), { credentials: 'include', headers: { 'accept': 'application/json' } }),
+      () => fetch('/gateway/graphql', { method: 'POST', credentials: 'include', headers: GQL_HEADERS, body: JSON.stringify({ query, operationName: 'getProduct' }) }),
+      () => fetch('/gateway/graphql?operationName=getProduct&query=' + encodeURIComponent(query), { credentials: 'include', headers: GQL_HEADERS }),
     ];
     let last = '';
     for (const a of attempts) {
