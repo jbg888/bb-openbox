@@ -92,14 +92,26 @@
     return `query q { ${parts.join(' ')} }`;
   }
 
+  async function graphql(query) {
+    // POST first; some networks get a bot-challenge on POST, so fall back to GET.
+    const attempts = [
+      () => fetch('/gateway/graphql', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'accept': 'application/json' }, body: JSON.stringify({ query }) }),
+      () => fetch('/gateway/graphql?query=' + encodeURIComponent(query), { credentials: 'include', headers: { 'accept': 'application/json' } }),
+    ];
+    let last = '';
+    for (const a of attempts) {
+      const r = await a();
+      const txt = await r.text();
+      let j = null;
+      try { j = JSON.parse(txt); } catch (e) { /* not json */ }
+      if (r.ok && j && j.data) return j;
+      last = `HTTP ${r.status} ${txt.replace(/\s+/g, ' ').slice(0, 160)}`;
+    }
+    throw new Error('graphql ' + last);
+  }
+
   async function fetchPrices(skus) {
-    const r = await fetch('/gateway/graphql', {
-      method: 'POST', credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ query: priceQuery(skus) }),
-    });
-    if (!r.ok) throw new Error(`graphql HTTP ${r.status}`);
-    const j = await r.json();
+    const j = await graphql(priceQuery(skus));
     const d = j.data || {};
     const out = {};
     for (const s of skus) {
@@ -199,9 +211,11 @@
 
     // prices in batches of 20 SKUs (=100 aliases per request)
     const batches = [];
-    for (let i = 0; i < skus.length; i += 20) batches.push(skus.slice(i, i + 20).map((x) => x.sku));
+    for (let i = 0; i < skus.length; i += 8) batches.push(skus.slice(i, i + 8).map((x) => x.sku));
     const priceMaps = await pool(batches, 3, (b) => retry(() => fetchPrices(b), 3, 'prices'), (d, n) => log(`prices ${d}/${n}`));
     const prices = Object.assign({}, ...priceMaps.filter((m) => m && !m.error));
+    const priceErrors = priceMaps.filter((m) => m && m.error).map((m) => m.error);
+    if (priceErrors.length) log(`price batches failed: ${priceErrors.length}/${batches.length} — ${priceErrors[0]}`);
 
     // availability, one call per sku
     const availList = await pool(skus, cfg.concurrency || 6, async ({ sku }) => {
@@ -211,7 +225,7 @@
     }, (d, n) => (d % 25 === 0 || d === n) && log(`availability ${d}/${n}`));
 
     const items = [];
-    const errors = [];
+    const errors = priceErrors.map((e) => ({ stage: 'prices', error: e }));
     skus.forEach(({ sku, category }, i) => {
       const a = availList[i];
       if (!a || a.error) { errors.push({ sku, error: (a && a.error) || 'no availability' }); return; }
