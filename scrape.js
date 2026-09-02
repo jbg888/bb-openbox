@@ -132,7 +132,7 @@ async function fullRun() {
   const ts = result.meta.ts;
   applyHistory(result.items, ts);
   const payload = {
-    meta: { ...result.meta, stores: cfg.stores, storeNames: cfg.storeNames, minPrice: cfg.minPrice, zip: cfg.zip, categories: Object.keys(cfg.categories), site: cfg.site },
+    meta: { ...result.meta, stores: cfg.stores, areas: cfg.areas || null, storeNames: cfg.storeNames, minPrice: cfg.minPrice, zip: cfg.zip, categories: Object.keys(cfg.categories), site: cfg.site },
     items: result.items,
   };
   fs.writeFileSync(P('data', 'deals.json'), JSON.stringify(payload, null, 1));
