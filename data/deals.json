@@ -1,13 +1,62 @@
 {
  "meta": {
-  "ts": "2026-09-02T08:28:25.521Z",
-  "durationMs": 10027,
-  "skusScanned": 0,
+  "ts": "2026-09-02T08:35:45.129Z",
+  "durationMs": 26025,
+  "skusScanned": 10,
   "itemsInStock": 0,
   "perCategory": {
-   "Headphones": 0
+   "Headphones": 10
   },
-  "errors": [],
+  "errors": [
+   {
+    "stage": "prices",
+    "error": "prices failed after 3 tries: Failed to fetch"
+   },
+   {
+    "stage": "prices",
+    "error": "prices failed after 3 tries: Failed to fetch"
+   },
+   {
+    "sku": "6494847",
+    "error": "no price"
+   },
+   {
+    "sku": "6642778",
+    "error": "no price"
+   },
+   {
+    "sku": "6580673",
+    "error": "no price"
+   },
+   {
+    "sku": "6645991",
+    "error": "no price"
+   },
+   {
+    "sku": "6683754",
+    "error": "no price"
+   },
+   {
+    "sku": "6550076",
+    "error": "no price"
+   },
+   {
+    "sku": "6678979",
+    "error": "no price"
+   },
+   {
+    "sku": "4992301",
+    "error": "no price"
+   },
+   {
+    "sku": "6550079",
+    "error": "no price"
+   },
+   {
+    "sku": "6552130",
+    "error": "no price"
+   }
+  ],
   "stores": [
    "393",
    "183",
