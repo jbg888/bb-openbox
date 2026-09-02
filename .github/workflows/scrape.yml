@@ -1,10 +1,15 @@
 # Runs the scraper on GitHub's servers — no computer needed.
-# Schedule is UTC: 07:00 UTC = midnight Pacific (PDT).
+# Schedule is UTC: 07:00 UTC = midnight Pacific (PDT). Adjust after the probe data tells us when Best Buy updates.
 name: scrape
 on:
   schedule:
-    - cron: "0 7,13,19,1 * * *"
-  workflow_dispatch:
+    - cron: "0 7,13,19,1 * * *"     # 00:00, 06:00, 12:00, 18:00 Pacific (PDT)
+  workflow_dispatch:                # "Run workflow" button in the Actions tab
+    inputs:
+      only:
+        description: "Only these categories (comma-separated), for quick tests. Blank = all."
+        required: false
+        default: ""
 permissions:
   contents: write
 concurrency: scrape
@@ -21,10 +26,12 @@ jobs:
       - name: scrape
         env:
           CI: "true"
+          # Only needed if Best Buy blocks GitHub's IPs. Add these under Settings > Secrets and variables > Actions.
           PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
           PROXY_USER: ${{ secrets.PROXY_USER }}
           PROXY_PASS: ${{ secrets.PROXY_PASS }}
-        run: node scrape.js --no-push
+        run: |
+          if [ -n "${{ inputs.only }}" ]; then node scrape.js --no-push --only "${{ inputs.only }}"; else node scrape.js --no-push; fi
       - name: commit results
         run: |
           git config user.name "scraper"
