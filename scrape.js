@@ -40,12 +40,15 @@ async function withPage(fn) {
     : path.join(os.homedir(), cfg.browser.profileDir);
   // On a cloud runner (GitHub Actions sets CI=true) use Playwright's bundled Chromium and an optional proxy.
   const onCI = !!process.env.CI;
+  if (onCI) { cfg.concurrency = 10; cfg.delayMs = 10; }
   const proxy = process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER, username: process.env.PROXY_USER, password: process.env.PROXY_PASS } : undefined;
   const ctx = await chromium.launchPersistentContext(profileDir, {
     channel: onCI ? undefined : (cfg.browser.channel || 'chrome'),
     headless: flag('--headed') ? false : (onCI || cfg.browser.headless !== false),
     proxy,
     viewport: { width: 1366, height: 900 },
+    // Bundled headless Chromium announces itself as "HeadlessChrome"; present a normal Chrome UA instead.
+    userAgent: onCI ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36' : undefined,
     locale: 'en-US',
     timezoneId: 'America/Los_Angeles',
     args: ['--disable-blink-features=AutomationControlled'],
